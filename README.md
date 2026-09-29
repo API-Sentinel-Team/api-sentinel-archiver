@@ -1,7 +1,21 @@
-# API Sentinel archiver
+# api-sentinel-archiver
 
-Repository initialized for the archiver service extraction.
+Dedicated archive and retention process: moves scan evidence and artifacts
+into long-term storage and enforces tenant retention policies.
 
-Status: **not deployable yet**. The current archiver implementation still imports shared backend modules from the committed API baseline. The next migration stage will extract versioned shared contracts/dependencies, add this service's own build and tests, and verify end-to-end operation before deployment.
+## Status: vendored build, decoupling pending
 
-Do not deploy this repository until that migration is complete.
+This is the simplest service to decouple: the storage module has no API
+imports, only shared models. The runtime is vendored under `server/` so the
+image builds and the archiver loop runs today; extracting the
+shared-contracts package remains the next stage.
+
+## Run
+
+```bash
+docker build -t api-sentinel/archiver:local .
+docker run --rm api-sentinel/archiver:local
+```
+
+Entry point: `python -m server.services.archiver_service` (needs Postgres
+and the standard API environment variables; archives under `/app/data`).

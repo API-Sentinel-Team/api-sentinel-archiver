@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from sentinel_core.models.core import Account
 from sentinel_core.modules.persistence.database import AsyncSessionLocal
-from sentinel_core.modules.storage.archiver import archive_once
+from sentinel_archiver.modules.storage.archiver import archive_once
 
 logger = logging.getLogger(__name__)
 

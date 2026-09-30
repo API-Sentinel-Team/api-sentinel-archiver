@@ -7,6 +7,7 @@ import signal
 
 from sentinel_core.config import settings
 from sentinel_archiver.modules.storage.archive_processor import ArchiveProcessor
+from sentinel_archiver.modules.storage.job_runner import ArchiveJobRunner
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ async def run_archiver_service() -> None:
         interval_sec=max(60, int(getattr(settings, "ARCHIVE_INTERVAL_SECONDS", 3600))),
         account_id=int(getattr(settings, "STARTUP_ARCHIVER_ACCOUNT_ID", 0)),
     )
+    job_runner = ArchiveJobRunner(poll_interval_sec=float(getattr(settings, "ARCHIVE_JOB_POLL_SECONDS", 5)))
     stop_event = asyncio.Event()
     loop = asyncio.get_running_loop()
     for name in ("SIGTERM", "SIGINT"):
@@ -27,9 +29,11 @@ async def run_archiver_service() -> None:
                 pass
 
     await processor.start()
+    await job_runner.start()  # executes archive jobs requested through the API
     try:
         await stop_event.wait()
     finally:
+        await job_runner.stop()
         await processor.stop()
 
 

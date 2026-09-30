@@ -1,21 +1,33 @@
 # api-sentinel-archiver
 
-Dedicated archive and retention process: moves scan evidence and artifacts
-into long-term storage and enforces tenant retention policies.
+Periodically archives and expires request logs, evidence records and pentest artifacts per tenant retention policy.
 
-## Status: vendored build, decoupling pending
+Part of API Sentinel. This repo contains **only this service's code**; everything shared
+(database models, migrations, config, tenancy, audit, redaction, pentest policy, scan planning,
+the security-test template library) lives in
+[`api-sentinel-core`](https://github.com/API-Sentinel-Team/api-sentinel-core), installed as the
+`sentinel-core` dependency and pinned to a released tag in `pyproject.toml`.
 
-This is the simplest service to decouple: the storage module has no API
-imports, only shared models. The runtime is vendored under `server/` so the
-image builds and the archiver loop runs today; extracting the
-shared-contracts package remains the next stage.
+## Boundaries
+
+- Never import another service's package. Services cooperate only through the database run
+  queue and Redis pub/sub. `tests/unit/test_service_boundaries.py` enforces this in the
+  api repo; the same rule holds here.
+- Schema changes are made in `api-sentinel-core` (the single owner of migrations), never here.
 
 ## Run
 
 ```bash
-docker build -t api-sentinel/archiver:local .
-docker run --rm api-sentinel/archiver:local
+python -m sentinel_archiver.services.archiver_service
 ```
 
-Entry point: `python -m server.services.archiver_service` (needs Postgres
-and the standard API environment variables; archives under `/app/data`).
+## Develop
+
+```bash
+pip install -e ../api-sentinel-core           # or the pinned tag from pyproject.toml
+pip install --no-deps -e ".[test]"
+DEBUG=true pytest -q
+```
+
+`DEBUG=true` is required by tests: without it `sentinel_core.config` refuses to build settings
+(production validation).
